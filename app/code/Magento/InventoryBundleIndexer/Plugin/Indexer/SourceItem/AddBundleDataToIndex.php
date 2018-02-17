@@ -7,60 +7,64 @@ declare(strict_types=1);
 
 namespace Magento\InventoryBundleIndexer\Plugin\Indexer\SourceItem;
 
-use Magento\InventoryBundleIndexer\Model\ResourceModel\Indexer\ExecuteFull;
-use Magento\InventoryBundleIndexer\Model\ResourceModel\Indexer\ExecuteList;
+use Magento\Bundle\Api\Data\OptionInterface;
+use Magento\Bundle\Api\ProductOptionRepositoryInterface;
+use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Catalog\Model\ProductRepository;
+use Magento\InventoryBundleIndexer\Model\ResourceModel\Indexer\ExecuteListByChildrenIds;
 
 class AddBundleDataToIndex
 {
     /**
-     * @var ExecuteList
+     * @var ProductRepository
      */
-    private $executeList;
+    private $productRepository;
 
     /**
-     * @var ExecuteFull
+     * @var ExecuteListByChildrenIds
      */
-    private $executeFull;
+    private $executeListByChildrenIds;
 
     /**
-     * @param ExecuteList $executeList
-     * @param ExecuteFull $executeFull
+     * @param ProductRepository $productRepository
+     * @param ExecuteListByChildrenIds $executeListByChildrenIds
      */
     public function __construct(
-        ExecuteList $executeList,
-        ExecuteFull $executeFull
+        ProductRepository $productRepository,
+        ExecuteListByChildrenIds $executeListByChildrenIds
     ) {
-        $this->executeList = $executeList;
-        $this->executeFull = $executeFull;
+        $this->productRepository = $productRepository;
+        $this->executeListByChildrenIds = $executeListByChildrenIds;
     }
 
     /**
-     * @param \Magento\InventoryIndexer\Indexer\SourceItem\SourceItemIndexer $sourceItemIndexer
+     * @param ProductOptionRepositoryInterface $subject
      * @param $result
+     * @param ProductInterface $product
+     * @param OptionInterface $option
      *
-     * @return void
+     * @return int
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function afterExecuteFull(
-        \Magento\InventoryIndexer\Indexer\SourceItem\SourceItemIndexer $sourceItemIndexer,
-        $result
-    ) {
-        $this->executeFull->execute();
-    }
-
-    /**
-     * @param \Magento\InventoryIndexer\Indexer\SourceItem\SourceItemIndexer $subject
-     * @param $result
-     * @param array $sourceItemIds
-     *
-     * @return void
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function afterExecuteList(
-        \Magento\InventoryIndexer\Indexer\SourceItem\SourceItemIndexer $subject,
+    public function afterSave(
+        ProductOptionRepositoryInterface $subject,
         $result,
-        array $sourceItemIds
+        ProductInterface $product,
+        OptionInterface $option
     ) {
-        $this->executeList->execute($sourceItemIds);
+        $productLinks = $option->getProductLinks();
+
+        $productIds = [];
+        foreach ($productLinks as $productLink) {
+            $productId = $productLink->getProductId();
+            if (null === $productId) {
+                $productId = $this->productRepository->get($productLink->getSku())->getId();
+            }
+            $productIds[] = $productId;
+        }
+
+        $this->executeListByChildrenIds->execute($productIds, $product->getSku());
+
+        return $result;
     }
 }

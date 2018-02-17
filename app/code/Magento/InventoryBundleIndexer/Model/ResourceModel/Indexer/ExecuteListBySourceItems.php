@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Magento\InventoryBundleIndexer\Model\ResourceModel\Indexer;
 
-class ExecuteFull
+class ExecuteListBySourceItems
 {
     /**
      * @var ReindexBySourceItemIds
@@ -15,28 +15,29 @@ class ExecuteFull
     private $reindexBySourceItemIds;
 
     /**
-     * @var GetAllBundleChildrenSourceItemsIdsWithSku
+     * @var GetBundleChildrenSourceItemsIdsWithSku
      */
-    private $getAllBundleChildrenSourceItemsIdsWithSku;
+    private $getBundleChildrenSourceItemsIdsBySku;
 
     /**
      * @param ReindexBySourceItemIds $reindexBySourceItemIds
-     * @param GetAllBundleChildrenSourceItemsIdsWithSku $getAllBundleChildrenSourceItemsIdsWithSku
+     * @param GetBundleChildrenSourceItemsIdsWithSku $getBundleChildrenSourceItemsIdsBySku
      */
     public function __construct(
         ReindexBySourceItemIds $reindexBySourceItemIds,
-        GetAllBundleChildrenSourceItemsIdsWithSku $getAllBundleChildrenSourceItemsIdsWithSku
+        GetBundleChildrenSourceItemsIdsWithSku $getBundleChildrenSourceItemsIdsBySku
     ) {
         $this->reindexBySourceItemIds = $reindexBySourceItemIds;
-        $this->getAllBundleChildrenSourceItemsIdsWithSku = $getAllBundleChildrenSourceItemsIdsWithSku;
+        $this->getBundleChildrenSourceItemsIdsBySku = $getBundleChildrenSourceItemsIdsBySku;
     }
 
     /**
+     * @param array $sourceItemIds
      * @return void
      */
-    public function execute()
+    public function execute(array $sourceItemIds)
     {
-        $bundleChildrenSourceItemsIdsBySku = $this->getAllBundleChildrenSourceItemsIdsWithSku->execute();
+        $bundleChildrenSourceItemsIdsBySku = $this->getBundleChildrenSourceItemsIdsBySku->execute($sourceItemIds);
         $this->reindexBySourceItemIds->execute($bundleChildrenSourceItemsIdsBySku);
     }
 }
